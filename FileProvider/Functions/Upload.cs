@@ -1,4 +1,3 @@
-using Data.Contexts;
 using Data.Entities;
 using FileProvider.Services;
 using Microsoft.AspNetCore.Http;
@@ -8,12 +7,12 @@ using Microsoft.Extensions.Logging;
 
 namespace FileProvider.Functions;
 
-public class UploadFunction
+public class Upload
 {
-    private readonly ILogger<UploadFunction> _logger;
+    private readonly ILogger<Upload> _logger;
     private readonly FileService _fileService;
 
-    public UploadFunction(ILogger<UploadFunction> logger, FileService fileService)
+    public Upload(ILogger<Upload> logger, FileService fileService)
     {
         _logger = logger;
         _fileService = fileService;
@@ -26,6 +25,26 @@ public class UploadFunction
         {
             if (req.Form.Files["file"] is IFormFile file)
             {
+                var maxAllowedFiles = 1;
+                long maxFileSize = 2500 * 1500;
+
+                if (file.Length > maxFileSize)
+                {
+                   return new BadRequestObjectResult("File size exceeds the limit.");
+                }
+
+                if (maxAllowedFiles > 1)
+                {
+                   return new BadRequestObjectResult("Exceeded the maximum number of files allowed.");
+                }
+
+                var allowedExtensions = new[] { ".jpg", ".jpeg", ".svg", ".png" };
+                var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+                if (!allowedExtensions.Contains(extension))
+                {
+                    return new BadRequestObjectResult("Invalid file extension. Please use jpg, jpeg, svg or png.");
+                }
+
                 var containerName = !string.IsNullOrEmpty(req.Query["containerName"]) ? req.Query["containerName"].ToString() : "files";
 
                 var fileEntity = new FileEntity
