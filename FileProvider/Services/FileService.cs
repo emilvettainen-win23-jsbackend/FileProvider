@@ -4,7 +4,6 @@ using Data.Contexts;
 using Data.Entities;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
-using System.Net.Mime;
 
 namespace FileProvider.Services;
 
@@ -13,12 +12,12 @@ public class FileService(DataContext context, ILogger<FileService> logger, BlobS
     private readonly ILogger<FileService> _logger = logger;
     private readonly DataContext _context = context;
     private readonly BlobServiceClient _client = client;
-    private BlobContainerClient _container;
+    private BlobContainerClient? _container;
 
     public async Task SetBlobContainerAsync(string containerName)
     {
-        _container = _client.GetBlobContainerClient(containerName) /*.koppla på containerform här*/;
-        await _container.CreateIfNotExistsAsync();
+        _container = _client.GetBlobContainerClient(containerName);
+        await _container.CreateIfNotExistsAsync(PublicAccessType.BlobContainer);
     }
 
     public string SetFileName(IFormFile file) 
@@ -34,7 +33,7 @@ public class FileService(DataContext context, ILogger<FileService> logger, BlobS
             ContentType = file.ContentType
         };
 
-        var blobClient = _container.GetBlobClient(fileEntity.FileName);
+        var blobClient = _container!.GetBlobClient(fileEntity.FileName);
 
         using var stream = file.OpenReadStream();
         await blobClient.UploadAsync(stream, headers);
